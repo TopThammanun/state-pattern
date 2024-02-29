@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "cockroachdb"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id         String   @id
+  ownerId    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  title      String
+  editorJson Json?
+  iconImage  Json?
+  coverImage Json?
+
+  @@index([ownerId, id])
+  @@index([ownerId])
+}
+
+model TestScb {
+  id                     Int    @id @default(sequence())
+  payeeProxyId           String @db.String(255)
+  payeeProxyType         String @db.String(255)
+  payeeAccountNumber     String @db.String(255)
+  payerAccountNumber     String @db.String(255)
+  payerName              String @db.String(255)
+  sendingBankCode        String @db.String(255)
+  receivingBankCode      String @db.String(255)
+  amount                 String @db.String(255)
+  transactionId          String @db.String(255)
+  transactionDateandTime String @db.String(255)
+  billPaymentRef1        String @db.String(255)
+  billPaymentRef2        String @db.String(255)
+  billPaymentRef3        String @db.String(255)
+  currencyCode           String @db.String(255)
+  channelCode            String @db.String(255)
+  transactionType        String @db.String(255)
+  payeeName              String @db.String(255)
+  payerProxyId           String @db.String(255)
+  payerProxyType         String @db.String(255)
+}
+
+model pwaTest {
+  id    Int    @id @default(sequence(maxValue: 2147483647))
+  fname String @db.String(255)
+  lname String @db.String(255)
+  email String @db.String(255)
+}
+
+model MST_USER {
+  user_id     String        @id @default(uuid())
+  user_name   String        @db.String(255)
+  TRANSACTION TRANSACTION[]
+}
+
+model MST_STATE {
+  id_state       String           @id @default(cuid())
+  name_state     String           @db.String(255)
+  MST_STATE_PLAN MST_STATE_PLAN[]
+}
+
+model MST_STATE_PLAN {
+  id_state_plan String    @id @default(cuid())
+  id_plan       String
+  id_state      String
+  sequence      Int       @default(0)
+  state         MST_STATE @relation(fields: [id_state], references: [id_state])
+  plan          MST_PLAN  @relation(fields: [id_plan], references: [id_plan])
+}
+
+model MST_PLAN {
+  id_plan        String           @id @default(cuid())
+  name_plan      String           @db.String(255)
+  TRANSACTION    TRANSACTION[]
+  MST_STATE_PLAN MST_STATE_PLAN[]
+}
+
+model TRANSACTION {
+  id_transaction String   @id @default(cuid())
+  id_plan        String
+  user_id        String
+  user           MST_USER @relation(fields: [user_id], references: [user_id])
+  plan           MST_PLAN @relation(fields: [id_plan], references: [id_plan])
+}
+
+model prisma_new_MST_USER {
+  user_id   String @id(map: "MST_USER_pkey") @db.Uuid
+  user_name String @db.String(255)
+
+  @@map("_prisma_new_MST_USER")
+}
