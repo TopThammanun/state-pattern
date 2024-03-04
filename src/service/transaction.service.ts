@@ -143,18 +143,20 @@ class OpinionsAgencies extends TransactionState {
 
 @Injectable()
 export class TransactionService {
-  constructor(private prisma: PrismaService) {}
+  private transactionContext: TransactionContext;
+
+  constructor(private prisma: PrismaService) {
+    this.transactionContext = new TransactionContext(this.prisma);
+  }
 
   async init(id_plan: string): Promise<string> {
-    const transactionContext = new TransactionContext(this.prisma);
-    const transactionId = await transactionContext.initialize(id_plan);
+    const transactionId = await this.transactionContext.initialize(id_plan);
     return transactionId;
   }
 
   async transitionToNextState(tranId: string): Promise<any> {
-    const transactionContext = new TransactionContext(this.prisma);
     const transactionId =
-      await transactionContext.transitionToNextState(tranId);
+      await this.transactionContext.transitionToNextState(tranId);
     return transactionId;
   }
 }
