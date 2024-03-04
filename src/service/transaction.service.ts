@@ -4,17 +4,73 @@ import { PrismaService } from '../prisma.service';
 // import { Public } from '@prisma/client/runtime/library';
 
 class TransactionContext {
-  private state: TransactionState;
+  public tran_id: string;
+  private prisma: PrismaService;
+  private currentState: TransactionState;
 
-  constructor(state: TransactionState) {
-    this.transitionTo(state);
+  constructor() {
+    this.prisma = new PrismaService();
   }
 
-  public async transitionToNextState(id: string): Promise<void> {
-    const nextStateName = 'Submitting';
-    const nextState = this.createStateInstance(nextStateName);
-    this.transitionTo(nextState);
-    await this.performAction(id);
+  private getInitialState(): TransactionState {
+    const initialStateName = 'Submitting';
+    return this.createStateInstance(initialStateName);
+  }
+
+  async initialize(id_plan: string): Promise<string> {
+    const stateInit = await this.prisma.mST_STATE_PLAN.findFirst({
+      where: {
+        id_plan: id_plan,
+        sequence: 1,
+      },
+    });
+    const stateName = await this.prisma.mST_STATE.findFirst({
+      where: {
+        id_state: stateInit.id_state,
+      },
+    });
+    const tarn = await this.prisma.tRANSACTION.create({
+      data: {
+        user_id: '1ef439f5-46d3-4c9c-ae58-328162241f9e',
+        id_plan: id_plan,
+        id_state: stateInit.id_state,
+      },
+    });
+    this.currentState = this.createStateInstance(stateName.name_function);
+    return tarn.id_transaction;
+  }
+
+  public async transitionToNextState(id: string): Promise<any> {
+    const tran = await this.prisma.tRANSACTION.findFirst({
+      where: {
+        id_transaction: id,
+      },
+    });
+    const stateInit = await this.prisma.mST_STATE_PLAN.findMany({
+      where: {
+        id_plan: tran.id_plan,
+      },
+    });
+    const currentState = stateInit.find(
+      (result) => result.id_state === tran.id_state,
+    );
+    const nextState = stateInit.find(
+      (result) => result.sequence === currentState.sequence + 1,
+    );
+    if (!nextState) {
+      throw new Error('invalid state');
+    }
+    const stateName = await this.prisma.mST_STATE.findFirst({
+      where: {
+        id_state: nextState.id_state,
+      },
+    });
+    this.currentState = this.createStateInstance(stateName.name_function);
+    await this.prisma.tRANSACTION.update({
+      where: { id_transaction: id },
+      data: { id_state: nextState.id_state },
+    });
+    return this.currentState;
   }
 
   private createStateInstance(stateName: string): TransactionState {
@@ -24,28 +80,12 @@ class TransactionContext {
       MapSubmit,
       CommunityMeeting,
       OpinionsAgencies,
-      MeetingComittee,
-      ProvinceSend,
-      DepartmentLandsSend,
-      CabinetPresent,
-      CouncilOfStatePresent,
-      Announcement,
-      DepartmentLandsSendProvince,
     };
     const StateClass = stateMap[stateName];
     if (!StateClass) {
       throw new Error(`Invalid state name: ${stateName}`);
     }
     return new StateClass();
-  }
-
-  public transitionTo(state: TransactionState): void {
-    this.state = state;
-    this.state.setContext(this);
-  }
-
-  public async performAction(id: string): Promise<void> {
-    await this.state.handleAction(id);
   }
 }
 
@@ -61,116 +101,63 @@ abstract class TransactionState {
 
 // การยื่นคำขอ
 class Submitting extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
+  constructor() {
+    super();
+    console.log('Submitting 1');
   }
+  public async handleAction(): Promise<void> {}
 }
 
 // การสอบสวนประวัติความเป็นมา
 class SubmitHistory extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
+  constructor() {
+    super();
+    console.log('SubmitHistory 2');
   }
+  public async handleAction(): Promise<void> {}
 }
 
 // การจัดทำแผนที่ท้ายพรฎ
 class MapSubmit extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
+  constructor() {
+    super();
+    console.log('MapSubmit 3');
   }
+  public async handleAction(): Promise<void> {}
 }
 
 // การประชุมประชาคมรับฟังความเห็น
 class CommunityMeeting extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
+  constructor() {
+    super();
+    console.log('CommunityMeeting 4');
   }
+  public async handleAction(): Promise<void> {}
 }
 
 // ความเห็นหน่วยงานเกี่ยวข้อง
 class OpinionsAgencies extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
+  constructor() {
+    super();
+    console.log('OpinionsAgencies 5');
   }
-}
-
-// การประชุมคณะกรรมการกำกับการใช้ประ โยชน์ฯของจังหวัด
-class MeetingComittee extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
-  }
-}
-
-// จังหวัดส่งเรื่องให้กรมที่ดิน
-class ProvinceSend extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
-  }
-}
-
-// กรมที่ดินเสนอกระทรวงมหาดไทย
-class DepartmentLandsSend extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
-  }
-}
-
-// นำเสนอคณะรัฐมนตรี
-class CabinetPresent extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
-  }
-}
-
-// นำเสนอคณะกรรมการกฤษฎีกา
-class CouncilOfStatePresent extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
-  }
-}
-
-// ประกาศราชกิจจานุเบกษา
-class Announcement extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
-  }
-}
-
-// กรมที่ดินแจ้งจังหวัด
-class DepartmentLandsSendProvince extends TransactionState {
-  public async handleAction(id: string): Promise<void> {
-    await this.context.transitionToNextState(id);
-  }
+  public async handleAction(): Promise<void> {}
 }
 
 @Injectable()
 export class TransactionService {
   constructor(private prisma: PrismaService) {}
 
-  async init(): Promise<string> {
-    const initialTransactionState = new Submitting();
-    const transactionContext = new TransactionContext(initialTransactionState);
-
-    const tarn = await this.prisma.tRANSACTION.create({
-      data: {
-        user_id: '1ef439f5-46d3-4c9c-ae58-328162241f9e',
-        id_plan: 'clt6r595p000dskk679d7w3xf',
-      },
-    });
-
-    await transactionContext.performAction(tarn.id_transaction);
-    return tarn.id_transaction;
+  async init(id_plan: string): Promise<string> {
+    const transactionContext = new TransactionContext();
+    const transactionId = await transactionContext.initialize(id_plan);
+    return transactionId;
   }
 
-  async transitionToNextState(transactionId: string): Promise<any> {
-    const transaction = await this.prisma.tRANSACTION.findUnique({
-      where: {
-        id_transaction: transactionId,
-      },
-    });
-
-    if (!transaction) {
-      throw new Error(`Transaction with ID ${transactionId} not found`);
-    }
+  async transitionToNextState(tranId: string): Promise<any> {
+    const transactionContext = new TransactionContext();
+    const transactionId =
+      await transactionContext.transitionToNextState(tranId);
+    return transactionId;
   }
 }

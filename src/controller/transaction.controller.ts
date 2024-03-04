@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { TransactionService } from '../service/transaction.service';
 
 @Controller('tran')
@@ -10,8 +10,13 @@ export class TransactionController {
     return 'Hello transaction!';
   }
 
-  @Get('/init')
-  Init(): any {
-    return this.tranService.init();
+  @Post('/init/:planId')
+  Init(@Param('planId') id_plan: string): any {
+    return this.tranService.init(id_plan);
+  }
+
+  @Put('/next/:tranId')
+  NextStep(@Param('tranId') tranId: string): any {
+    return this.tranService.transitionToNextState(tranId);
   }
 }

@@ -60,7 +60,9 @@ model MST_USER {
 model MST_STATE {
   id_state       String           @id @default(cuid())
   name_state     String           @db.String(255)
+  name_function  String?          @db.String(255)
   MST_STATE_PLAN MST_STATE_PLAN[]
+  TRANSACTION    TRANSACTION[]
 }
 
 model MST_STATE_PLAN {
@@ -80,11 +82,13 @@ model MST_PLAN {
 }
 
 model TRANSACTION {
-  id_transaction String   @id @default(cuid())
+  id_transaction String     @id @default(cuid())
   id_plan        String
   user_id        String
-  user           MST_USER @relation(fields: [user_id], references: [user_id])
-  plan           MST_PLAN @relation(fields: [id_plan], references: [id_plan])
+  id_state       String?
+  user           MST_USER   @relation(fields: [user_id], references: [user_id])
+  plan           MST_PLAN   @relation(fields: [id_plan], references: [id_plan])
+  state          MST_STATE? @relation(fields: [id_state], references: [id_state])
 }
 
 model prisma_new_MST_USER {
