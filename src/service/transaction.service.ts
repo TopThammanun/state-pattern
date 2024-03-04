@@ -1,20 +1,12 @@
 import { Injectable } from '@nestjs/common';
-// import { Prisma, pwaTest } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-// import { Public } from '@prisma/client/runtime/library';
 
 class TransactionContext {
-  public tran_id: string;
   private prisma: PrismaService;
   private currentState: TransactionState;
 
-  constructor() {
-    this.prisma = new PrismaService();
-  }
-
-  private getInitialState(): TransactionState {
-    const initialStateName = 'Submitting';
-    return this.createStateInstance(initialStateName);
+  constructor(prisma: PrismaService) {
+    this.prisma = prisma;
   }
 
   async initialize(id_plan: string): Promise<string> {
@@ -58,7 +50,7 @@ class TransactionContext {
       (result) => result.sequence === currentState.sequence + 1,
     );
     if (!nextState) {
-      throw new Error('invalid state');
+      throw new Error('Invalid state transition');
     }
     const stateName = await this.prisma.mST_STATE.findFirst({
       where: {
@@ -103,16 +95,18 @@ abstract class TransactionState {
 class Submitting extends TransactionState {
   constructor() {
     super();
-    console.log('Submitting 1');
+    console.log('1');
+    /// here is logic when call new state
   }
   public async handleAction(): Promise<void> {}
 }
 
-// การสอบสวนประวัติความเป็นมา
+// การสอบสวิตประวัติความเป็นมา
 class SubmitHistory extends TransactionState {
   constructor() {
     super();
-    console.log('SubmitHistory 2');
+    console.log('2');
+    /// here is logic when call new state
   }
   public async handleAction(): Promise<void> {}
 }
@@ -121,7 +115,8 @@ class SubmitHistory extends TransactionState {
 class MapSubmit extends TransactionState {
   constructor() {
     super();
-    console.log('MapSubmit 3');
+    console.log('3');
+    /// here is logic when call new state
   }
   public async handleAction(): Promise<void> {}
 }
@@ -130,7 +125,8 @@ class MapSubmit extends TransactionState {
 class CommunityMeeting extends TransactionState {
   constructor() {
     super();
-    console.log('CommunityMeeting 4');
+    console.log('4');
+    /// here is logic when call new state
   }
   public async handleAction(): Promise<void> {}
 }
@@ -139,7 +135,8 @@ class CommunityMeeting extends TransactionState {
 class OpinionsAgencies extends TransactionState {
   constructor() {
     super();
-    console.log('OpinionsAgencies 5');
+    console.log('5');
+    /// here is logic when call new state
   }
   public async handleAction(): Promise<void> {}
 }
@@ -149,13 +146,13 @@ export class TransactionService {
   constructor(private prisma: PrismaService) {}
 
   async init(id_plan: string): Promise<string> {
-    const transactionContext = new TransactionContext();
+    const transactionContext = new TransactionContext(this.prisma);
     const transactionId = await transactionContext.initialize(id_plan);
     return transactionId;
   }
 
   async transitionToNextState(tranId: string): Promise<any> {
-    const transactionContext = new TransactionContext();
+    const transactionContext = new TransactionContext(this.prisma);
     const transactionId =
       await transactionContext.transitionToNextState(tranId);
     return transactionId;
